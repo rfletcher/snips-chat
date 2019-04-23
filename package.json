@@ -1,0 +1,22 @@
+{
+  "name": "snips-text",
+  "version": "0.0.1",
+  "description": "A simple text-based interface for Snips.ai",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "snips",
+    "chat",
+    "home-automation"
+  ],
+  "author": "Rick Fletcher <fletch@pobox.com>",
+  "license": "MIT",
+  "dependencies": {
+    "md5": "2.2.1",
+    "merge": "1.2.1",
+    "mqtt": "2.18.8",
+    "strip-for-search": "1.0.2"
+  }
+}
