@@ -1,7 +1,10 @@
-var md5            = require("md5");
+"use strict";
+
 var merge          = require("merge");
 var mqtt           = require("mqtt");
 var stripForSearch = require("strip-for-search");
+
+const Site = require("./site.js");
 
 var config = {
   debug: true,
@@ -13,8 +16,7 @@ var config = {
   },
 }
 
-var snips = {
-  input: [],
+const snips = {
   sites: {},
 
   log: function (message) {
@@ -57,7 +59,7 @@ var snips = {
           this.sites[message.siteId].session_id = undefined;
           break;
         case "hermes/asr/startListening":
-          this.processInput();
+          this.processInput(this.sites[message.siteId]);
           break;
         case "hermes/tts/say":
           this.log(message);
@@ -68,30 +70,27 @@ var snips = {
     }
   },
 
-  processInput: function() {
-    var input = this.input.shift();
+  processInput: function(site) {
+    var input = site.dequeue();
 
     if (input) {
       this.send("hermes/asr/textCaptured", {
         likelihood: 1,
-        sessionId:  this.sites[input.site_id].session_id,
-        siteId:     input.site_id,
+        sessionId:  site.session_id,
+        siteId:     site.id,
         seconds:    0,
-        text:       input.text,
+        text:       input.replace(/[^\w0-9]+$/, ''),
       });
     }
   },
 
   push: function (sender, text) {
-    var site_id = this.siteId(sender);
+    const site = this.site(sender);
 
-    this.input.push({
-      site_id: site_id,
-      text:    text.replace(/[^\w0-9]+$/, ''),
-    });
+    site.enqueue(text);
 
-    if (!this.sites[site_id].session_id) {
-      this.wake(site_id);
+    if (!site.listening()) {
+      this.wake(site);
     }
   },
 
@@ -102,29 +101,28 @@ var snips = {
     client.publish(topic, JSON.stringify(message));
   },
 
-  siteId: function(sender) {
-    var hash = md5(sender).substr(0, 8);
+  site: function(name) {
+    const site_id = Site.id(name);
 
-    this.sites[hash] = this.sites[hash] || {};
-    this.sites[hash] = merge(this.sites[hash], {
-      sender: sender,
-    });
+    if (!this.sites[site_id]) {
+      this.sites[site_id] = new Site(name);
+    }
 
-    return hash;
+    return this.sites[site_id];
   },
 
-  wake: function (site_id) {
+  wake: function (site) {
     this.send("hermes/hotword/default/detected", {
       currentSensitivity: 0.5,
       modelId:            "hey_snips",
       modelType:          "universal",
       modelVersion:       "hey_snips_3.1_2018-04-13T15:27:35_model_0019",
-      siteId:             site_id,
+      siteId:             site.id,
     });
   }
 }
 
-var client = mqtt.connect(`mqtt://${config.mqtt.host}`);
+const client = mqtt.connect(`mqtt://${config.mqtt.host}`);
 
 client.on("message", snips.onMessage.bind(snips));
 
