@@ -1,8 +1,6 @@
 "use strict";
 
-var merge          = require("merge");
-var mqtt           = require("mqtt");
-var stripForSearch = require("strip-for-search");
+var mqtt = require("mqtt");
 
 const Site = require("./site.js");
 
