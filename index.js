@@ -1,12 +1,13 @@
 "use strict";
 
-var mqtt = require("mqtt");
+const mqtt = require("mqtt");
+const pino = require("pino");
 
 const Site = require("./site.js");
 
 var config = {
-  debug: true,
-  mqtt:  {
+  logger: pino({ level: "debug" }),
+  mqtt: {
     host: "mqtt.farmhouse.io"
   },
   snips: {
@@ -14,23 +15,20 @@ var config = {
   },
 }
 
+const client = mqtt.connect(`mqtt://${config.mqtt.host}`);
+const logger = config.logger;
+
 const snips = {
   sites: {},
 
-  log: function (message) {
-    if (config.debug) {
-      console.log(message);
-    }
-  },
-
   logMessage: function (message) {
-    this.log("\t" + message);
+    logger.debug(message.toString());
   },
 
   onMessage: function (topic, message) {
     var matches, message, site_id, site_ids = Object.keys(this.sites);
 
-    this.log(`-> ${topic}`);
+    logger.info(`-> ${topic}`);
 
     if (matches = topic.match(new RegExp(`^(hermes/audioServer/(${site_ids.join("|")}))/`))) {
       site_id = matches[2];
@@ -60,10 +58,10 @@ const snips = {
           this.processInput(this.sites[message.siteId]);
           break;
         case "hermes/tts/say":
-          this.log(message);
+          logger.debug(message);
           break;
         default:
-          console.warn("\t(unhandled topic)");
+          logger.warn(`unhandled topic: ${topic}`);
       }
     }
   },
@@ -93,7 +91,7 @@ const snips = {
   },
 
   send: function(topic, message) {
-    this.log(`<- ${topic}`);
+    logger.info(`<- ${topic}`);
     this.logMessage(JSON.stringify(message));
 
     client.publish(topic, JSON.stringify(message));
@@ -119,8 +117,6 @@ const snips = {
     });
   }
 }
-
-const client = mqtt.connect(`mqtt://${config.mqtt.host}`);
 
 client.on("message", snips.onMessage.bind(snips));
 
