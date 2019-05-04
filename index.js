@@ -107,6 +107,11 @@ const snips = {
 
     if (!this.sites[site_id]) {
       this.sites[site_id] = new Site(name);
+
+      // disabled notification sounds, to save on some hermes/audioServer/* message processing
+      this.send("hermes/feedback/sound/toggleOff", {
+        siteId: site_id,
+      });
     }
 
     return this.sites[site_id];
