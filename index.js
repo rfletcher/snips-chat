@@ -21,48 +21,54 @@ const logger = config.logger;
 const snips = {
   sites: {},
 
-  logMessage: function (message) {
+  logMessage: function (topic, message, inbound = true) {
+    var direction = inbound ? "->" : "<-";
+
+    logger.info(`${direction} ${topic}`);
     logger.debug(message.toString());
   },
 
-  onMessage: function (topic, message) {
-    var matches, message, site_id, site_ids = Object.keys(this.sites);
+  onAudioMessage: function (topic, message) {
+    var matches, site_id, site_ids = Object.keys(this.sites);
 
-    logger.info(`-> ${topic}`);
+    matches  = topic.match(new RegExp(`^(hermes/audioServer/(${site_ids.join("|")}))/`));
+    site_id  = matches[2];
 
-    if (matches = topic.match(new RegExp(`^(hermes/audioServer/(${site_ids.join("|")}))/`))) {
-      site_id = matches[2];
-
-      if (topic.startsWith(`${matches[1]}/playBytes/`)) {
-        this.send(`${matches[1]}/playFinished`, {
-          id:        topic.split('/')[4],
-          sessionId: this.sites[site_id].session_id,
-          siteId:    site_id,
-        });
-      } else {
-        this.logMessage(message);
-      }
+    if (topic.startsWith(`${matches[1]}/playBytes/`)) {
+      this.send(`${matches[1]}/playFinished`, {
+        id:        topic.split('/')[4],
+        sessionId: this.sites[site_id].session_id,
+        siteId:    site_id,
+      });
     } else {
-      this.logMessage(message);
+      this.logMessage(topic, message);
+    }
+  },
 
-      message = JSON.parse(message);
+  onMessage: function (topic, message) {
+    if (topic.startsWith("hermes/audioServer/")) {
+      return this.onAudioMessage(topic, message);
+    }
 
-      switch (topic) {
-        case "hermes/dialogueManager/sessionStarted":
-          this.sites[message.siteId].session_id = message.sessionId;
-          break;
-        case "hermes/dialogueManager/sessionEnded":
-          this.sites[message.siteId].session_id = undefined;
-          break;
-        case "hermes/asr/startListening":
-          this.processInput(this.sites[message.siteId]);
-          break;
-        case "hermes/tts/say":
-          logger.debug(message);
-          break;
-        default:
-          logger.warn(`unhandled topic: ${topic}`);
-      }
+    this.logMessage(topic, message);
+
+    message = JSON.parse(message);
+
+    switch (topic) {
+      case "hermes/dialogueManager/sessionStarted":
+        this.sites[message.siteId].session_id = message.sessionId;
+        break;
+      case "hermes/dialogueManager/sessionEnded":
+        this.sites[message.siteId].session_id = undefined;
+        break;
+      case "hermes/asr/startListening":
+        this.processInput(this.sites[message.siteId]);
+        break;
+      case "hermes/tts/say":
+        logger.debug(message);
+        break;
+      default:
+        logger.warn(`unhandled topic: ${topic}`);
     }
   },
 
@@ -91,8 +97,7 @@ const snips = {
   },
 
   send: function(topic, message) {
-    logger.info(`<- ${topic}`);
-    this.logMessage(JSON.stringify(message));
+    this.logMessage(topic, JSON.stringify(message), false);
 
     client.publish(topic, JSON.stringify(message));
   },
