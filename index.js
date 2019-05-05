@@ -108,7 +108,7 @@ const snips = {
     if (!this.sites[site_id]) {
       this.sites[site_id] = new Site(name);
 
-      // disabled notification sounds, to save on some hermes/audioServer/* message processing
+      // disable unused feedback sounds
       this.send("hermes/feedback/sound/toggleOff", {
         siteId: site_id,
       });
@@ -120,9 +120,9 @@ const snips = {
   wake: function (site) {
     this.send("hermes/hotword/default/detected", {
       currentSensitivity: 0.5,
-      modelId:            "hey_snips",
+      modelId:            "snips_text",
       modelType:          "universal",
-      modelVersion:       "hey_snips_3.1_2018-04-13T15:27:35_model_0019",
+      modelVersion:       "snips_text-0.0.1",
       siteId:             site.id,
     });
   }
