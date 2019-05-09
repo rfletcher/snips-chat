@@ -1,7 +1,7 @@
 "use strict";
 
-const pino  = require("pino");
-const Snips = require("./lib/snips.js");
+import pino from "pino";
+import Snips from "./lib/snips.js";
 
 var config = {
   logger: pino({ level: "debug" }),
