@@ -18,5 +18,12 @@
     "md5": "2.2.1",
     "mqtt": "2.18.8",
     "pino": "5.11.1"
+  },
+  "devDependencies": {
+    "jshint": "2.10.2"
+  },
+  "jshintConfig": {
+    "esversion": 6,
+    "node": true
   }
 }
