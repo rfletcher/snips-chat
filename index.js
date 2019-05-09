@@ -13,7 +13,7 @@ var config = {
   snips: {
     wakeword: "default",
   },
-}
+};
 
 config.mqtt.port = config.mqtt.port || (config.mqtt.ssl ? 8883 : 1883);
 
