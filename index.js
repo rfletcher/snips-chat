@@ -1,147 +1,27 @@
 "use strict";
 
-const mqtt = require("mqtt");
-const pino = require("pino");
-
-const Site = require("./site.js");
+const pino  = require("pino");
+const Snips = require("./lib/snips.js");
 
 var config = {
   logger: pino({ level: "debug" }),
   mqtt: {
-    host: "mqtt.farmhouse.io"
+    host: "mqtt.farmhouse.io",
+    port: null,
+    ssl:  false,
   },
   snips: {
     wakeword: "default",
   },
 }
 
-const client = mqtt.connect(`mqtt://${config.mqtt.host}`);
-const logger = config.logger;
+config.mqtt.port = config.mqtt.port || (config.mqtt.ssl ? 8883 : 1883);
 
-const snips = {
-  sites: {},
+const snips = new Snips(config);
 
-  logMessage: function (topic, message, inbound = true) {
-    var direction = inbound ? "->" : "<-";
+snips.push("fletch@pobox.com", "is it hot?");
+snips.push("fletch@pobox.com", "outside");
 
-    logger.info(`${direction} ${topic}`);
-    logger.debug(message.toString());
-  },
-
-  onAudioMessage: function (topic, message) {
-    var matches, site_id, site_ids = Object.keys(this.sites);
-
-    matches  = topic.match(new RegExp(`^(hermes/audioServer/(${site_ids.join("|")}))/`));
-    site_id  = matches[2];
-
-    if (topic.startsWith(`${matches[1]}/playBytes/`)) {
-      this.send(`${matches[1]}/playFinished`, {
-        id:        topic.split('/')[4],
-        sessionId: this.sites[site_id].session_id,
-        siteId:    site_id,
-      });
-    } else {
-      this.logMessage(topic, message);
-    }
-  },
-
-  onMessage: function (topic, message) {
-    if (topic.startsWith("hermes/audioServer/")) {
-      return this.onAudioMessage(topic, message);
-    }
-
-    this.logMessage(topic, message);
-
-    message = JSON.parse(message);
-
-    switch (topic) {
-      case "hermes/dialogueManager/sessionStarted":
-        this.sites[message.siteId].session_id = message.sessionId;
-        break;
-      case "hermes/dialogueManager/sessionEnded":
-        this.sites[message.siteId].session_id = undefined;
-        break;
-      case "hermes/asr/startListening":
-        this.processInput(this.sites[message.siteId]);
-        break;
-      case "hermes/tts/say":
-        logger.debug(message);
-        break;
-      default:
-        logger.warn(`unhandled topic: ${topic}`);
-    }
-  },
-
-  processInput: function(site) {
-    var input = site.dequeue();
-
-    if (input) {
-      this.send("hermes/asr/textCaptured", {
-        likelihood: 1,
-        sessionId:  site.session_id,
-        siteId:     site.id,
-        seconds:    0,
-        text:       input.replace(/[^\w0-9]+$/, ''),
-      });
-    }
-  },
-
-  push: function (sender, text) {
-    const site = this.site(sender);
-
-    site.enqueue(text);
-
-    if (!site.listening()) {
-      this.wake(site);
-    }
-  },
-
-  send: function(topic, message) {
-    this.logMessage(topic, JSON.stringify(message), false);
-
-    client.publish(topic, JSON.stringify(message));
-  },
-
-  site: function(name) {
-    const site_id = Site.id(name);
-
-    if (!this.sites[site_id]) {
-      this.sites[site_id] = new Site(name);
-
-      // disable unused feedback sounds
-      this.send("hermes/feedback/sound/toggleOff", {
-        siteId: site_id,
-      });
-    }
-
-    return this.sites[site_id];
-  },
-
-  wake: function (site) {
-    this.send("hermes/hotword/default/detected", {
-      currentSensitivity: 0.5,
-      modelId:            "snips_text",
-      modelType:          "universal",
-      modelVersion:       "snips_text-0.0.1",
-      siteId:             site.id,
-    });
-  }
-}
-
-client.on("message", snips.onMessage.bind(snips));
-
-client.subscribe("hermes/asr/#");
-client.subscribe("hermes/audioServer/+/playBytes/#");
-client.subscribe("hermes/audioServer/+/playFinished");
-client.subscribe("hermes/dialogueManager/#");
-client.subscribe("hermes/hotword/#");
-client.subscribe("hermes/intent/#");
-client.subscribe("hermes/nlu/#");
-client.subscribe("hermes/tts/#");
-
-client.on("connect", function () {
-  snips.push("fletch@pobox.com", "is it hot?");
-  snips.push("fletch@pobox.com", "outside");
+snips.on("text", function(who, what) {
+  config.logger.info(`Send to ${who}: ${what}`);
 });
-
-// client.end();
