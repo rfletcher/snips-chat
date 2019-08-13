@@ -16,8 +16,8 @@
   "license": "MIT",
   "dependencies": {
     "md5": "2.2.1",
-    "mqtt": "2.18.8",
-    "pino": "5.11.1"
+    "mqtt": "3.0.0",
+    "pino": "5.13.2"
   },
   "devDependencies": {
     "jshint": "2.10.2"
