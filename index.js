@@ -5,7 +5,7 @@ import Snips from "./lib/snips.js";
 
 // default config
 var config = {
-  logger: pino({ level: "debug" }),
+  logger: pino({ level: "trace" }),
   mqtt: {
     host: "mqtt.farmhouse.io",
     port: null,

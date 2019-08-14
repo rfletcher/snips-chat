@@ -15,6 +15,7 @@
   "author": "Rick Fletcher <fletch@pobox.com>",
   "license": "MIT",
   "dependencies": {
+    "clone": "2.1.2",
     "md5": "2.2.1",
     "mqtt": "3.0.0",
     "pino": "5.13.2"
