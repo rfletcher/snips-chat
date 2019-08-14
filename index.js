@@ -25,5 +25,5 @@ snips.on("text", function(recipient, message) {
 });
 
 // send a test message
-snips.push("fletch@pobox.com", "is it hot outside?");
+snips.push("user@example.com", "is it hot outside?");
 // snips.push("fletch@pobox.com", "outside");
