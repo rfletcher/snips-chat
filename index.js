@@ -1,6 +1,6 @@
 "use strict";
 
-import pino from "pino";
+import pino  from "pino";
 import Snips from "./lib/snips.js";
 
 // default config
@@ -20,8 +20,8 @@ config.mqtt.port = config.mqtt.port || (config.mqtt.ssl ? 8883 : 1883);
 // initailize
 const snips = new Snips(config);
 
-snips.on("text", function(who, what) {
-  config.logger.info(`Send to ${who}: ${what}`);
+snips.on("text", function(recipient, message) {
+  config.logger.info(`Send to ${recipient}: ${message}`);
 });
 
 // send a test message
