@@ -18,8 +18,7 @@
     "clone": "2.1.2",
     "md5": "2.2.1",
     "mqtt": "3.0.0",
-    "pino": "5.13.2",
-    "uri-js": "4.2.2"
+    "pino": "5.13.2"
   },
   "devDependencies": {
     "jshint": "2.10.2"
